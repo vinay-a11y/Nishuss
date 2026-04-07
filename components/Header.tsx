@@ -4,7 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { User, ShoppingCart, Phone, Menu, LogIn, Package } from "lucide-react"
+import { User, ShoppingCart, Phone, Menu, LogIn, Package, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -26,6 +26,7 @@ const Header: React.FC = () => {
     { name: "Menu", href: "/menu", icon: null },
     { name: "My Orders", href: "/orders", icon: Package },
     { name: "Contact", href: "/contact", icon: Phone },
+    { name: "Admin", href: "/admin", icon: Shield },
   ]
 
   return (
@@ -50,11 +51,11 @@ const Header: React.FC = () => {
                   <div className="flex flex-col h-full">
                     <div className="flex items-center space-x-3 pb-6 border-b border-orange-500/20">
                       <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center animate-pulse-orange">
-                        <span className="text-black font-bold text-xl">B</span>
+                        <span className="text-black font-bold text-xl">V</span>
                       </div>
                       <div>
-                        <h2 className="font-heading font-bold text-lg neon-text">Biryani Adda</h2>
-                        <p className="text-sm text-orange-400">Authentic Flavors</p>
+                        <h2 className="font-heading font-bold text-lg neon-text">Vaibhav Resto</h2>
+                        <p className="text-sm text-orange-400">Fresh Restaurant Favorites</p>
                       </div>
                     </div>
 
@@ -145,11 +146,11 @@ const Header: React.FC = () => {
               className="flex items-center space-x-2 md:flex-none absolute left-1/2 transform -translate-x-1/2 md:relative md:left-auto md:transform-none"
             >
               <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center animate-pulse-orange">
-                <span className="text-black font-bold text-lg">B</span>
+                <span className="text-black font-bold text-lg">V</span>
               </div>
               <span className="text-xl font-heading font-bold">
-                <span className="text-primary neon-text">Biryani</span>
-                <span className="text-foreground"> Adda</span>
+                <span className="text-primary neon-text">Vaibhav</span>
+                <span className="text-foreground"> Resto</span>
               </span>
             </Link>
 

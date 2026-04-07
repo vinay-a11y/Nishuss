@@ -27,26 +27,27 @@ const CheckoutPage: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false)
   const [razorpayLoaded, setRazorpayLoaded] = useState(false)
   const [activeAccordion, setActiveAccordion] = useState<string>("address")
+  const [redirectingOrderId, setRedirectingOrderId] = useState<string | null>(null)
 
   const defaultAddress = userProfile?.addresses?.find((addr) => addr.isDefault)
 
   useEffect(() => {
     if (!user) {
       toast.error("Please login to continue")
-      router.push("/auth")
+      router.push("/")
       return
     }
 
-    if (cartItems.length === 0) {
+    if (cartItems.length === 0 && !redirectingOrderId && !isProcessing) {
       router.push("/cart")
       return
     }
-  }, [user, cartItems.length, router])
+  }, [user, cartItems.length, router, redirectingOrderId, isProcessing])
 
   const handlePayment = async () => {
     if (!user) {
       toast.error("Please login to continue")
-      router.push("/auth")
+      router.push("/")
       return
     }
 
@@ -106,10 +107,12 @@ const CheckoutPage: React.FC = () => {
         key: key,
         amount: amount,
         currency: currency,
-        name: "Biryani Adda",
-        description: "Delicious Biryani Order",
+        name: "Vaibhav Resto",
+        description: "Restaurant Order Payment",
         order_id: orderId,
         handler: async (response: any) => {
+          let didStartRedirect = false
+
           try {
             // Verify payment on server
             const verifyResponse = await fetch("/api/payment/verify", {
@@ -133,15 +136,20 @@ const CheckoutPage: React.FC = () => {
 
             const result = await verifyResponse.json()
 
-            // Clear cart and redirect to success page
+            setRedirectingOrderId(result.orderId)
             clearCart()
             toast.success("Payment successful! Order placed.")
-               router.push(`/order-success?orderId=${result.orderId}`)
-           } catch (error: any) {
+            didStartRedirect = true
+
+            // Razorpay callback can be finicky with client routing, so use a hard navigation.
+            window.location.href = `/order-success?orderId=${result.orderId}`
+          } catch (error: any) {
             console.error("Payment verification error:", error)
             toast.error(error.message || "Payment verification failed")
           } finally {
-            setIsProcessing(false)
+            if (!didStartRedirect) {
+              setIsProcessing(false)
+            }
           }
         },
         prefill: {
@@ -172,7 +180,7 @@ const CheckoutPage: React.FC = () => {
     }
   }
 
-  if (!user || cartItems.length === 0) {
+  if (!user || (cartItems.length === 0 && !redirectingOrderId)) {
     return null
   }
 

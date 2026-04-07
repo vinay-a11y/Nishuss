@@ -78,7 +78,7 @@ const HomePage: React.FC = () => {
     {
       icon: Truck,
       title: "Lightning Fast Delivery",
-      description: "Hot, fresh biryani delivered to your doorstep in under 30 minutes guaranteed",
+      description: "Hot, fresh favorites delivered to your doorstep in under 30 minutes guaranteed",
       color: "bg-secondary/10 text-secondary border-secondary/20",
     },
   ]
@@ -110,7 +110,7 @@ const HomePage: React.FC = () => {
               className="mb-6"
             >
               <Badge className="bg-primary/20 text-primary border-primary/30 text-sm px-4 py-2 mb-4 animate-glow">
-                ✨ Authentic Biryani Since 1995
+                Freshly Cooked Favorites Every Day
               </Badge>
             </motion.div>
 
@@ -120,7 +120,7 @@ const HomePage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 1 }}
             >
-              <span className="text-primary neon-text animate-float">Biryani</span> Adda
+              <span className="text-primary neon-text animate-float">Vaibhav</span> Resto
             </motion.h1>
 
             <motion.p
@@ -129,8 +129,8 @@ const HomePage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 1 }}
             >
-              Experience the authentic flavors of Bhiwandi's finest biryani, crafted with love, tradition, and the
-              perfect blend of aromatic spices
+              Experience the signature flavors of Vaibhav Resto, from aromatic biryanis to comforting restaurant
+              classics crafted with love, tradition, and bold spices.
             </motion.p>
 
             <motion.div
@@ -226,10 +226,10 @@ const HomePage: React.FC = () => {
           >
             <Badge className="bg-primary/10 text-primary border-primary/20 mb-4 animate-glow">Our Specialties</Badge>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-heading font-bold mb-6 text-balance">
-              Our <span className="text-primary neon-text">Signature</span> Biryanis
+              Our <span className="text-primary neon-text">Signature</span> Favorites
             </h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto text-pretty">
-              Each biryani is crafted with premium ingredients and traditional cooking methods passed down through generations
+              Every dish is crafted with premium ingredients and kitchen traditions that make Vaibhav Resto special.
             </p>
           </motion.div>
 
@@ -280,7 +280,7 @@ const HomePage: React.FC = () => {
               Why Choose Us
             </Badge>
             <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6 text-balance">
-              Why Choose <span className="text-primary neon-text">Biryani Adda</span>?
+              Why Choose <span className="text-primary neon-text">Vaibhav Resto</span>?
             </h2>
           </motion.div>
 
@@ -317,7 +317,7 @@ const HomePage: React.FC = () => {
         <div className="container-custom text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <h2 className="text-3xl md:text-4xl font-heading font-bold mb-6 text-balance neon-text">
-              Ready to Experience the Best Biryani?
+              Ready to Order from Vaibhav Resto?
             </h2>
             <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto text-pretty">
               Free delivery on your first 5 orders! Join thousands of satisfied customers today.

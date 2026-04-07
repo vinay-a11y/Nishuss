@@ -13,6 +13,7 @@ import { auth } from "@/lib/firebase"
 import { orderService, type Order } from "@/lib/firebase-services"
 import AddressModal from "@/components/AddressModal"
 import { useRouter } from "next/navigation"
+import { formatOrderStatus, getOrderStatusColor } from "@/lib/order-status"
 
 const ProfilePage: React.FC = () => {
   const { user, userProfile, refreshUserProfile } = useAuth()
@@ -22,26 +23,19 @@ const ProfilePage: React.FC = () => {
   const [showAddressModal, setShowAddressModal] = useState(false)
 
   React.useEffect(() => {
-    if (user) {
-      loadRecentOrders()
-    } else {
-      router.push("/login") // Redirect to login if not authenticated
+    if (!user) {
+      router.push("/")
+      return
     }
-  }, [user, router])
-
-  const loadRecentOrders = async () => {
-    if (!user) return
 
     setLoading(true)
-    try {
-      const orders = await orderService.getUserOrders(user.uid)
-      setRecentOrders(orders.slice(0, 3)) // Show only recent 3 orders
-    } catch (error) {
-      console.error("Error loading orders:", error)
-    } finally {
+    const unsubscribe = orderService.subscribeToUserOrders(user.uid, (orders) => {
+      setRecentOrders(orders.slice(0, 3))
       setLoading(false)
-    }
-  }
+    })
+
+    return () => unsubscribe()
+  }, [user, router])
 
   const handleLogout = async () => {
     try {
@@ -49,23 +43,6 @@ const ProfilePage: React.FC = () => {
       router.push("/")
     } catch (error) {
       console.error("Error logging out:", error)
-    }
-  }
-
-  const getStatusColor = (status: Order["status"]) => {
-    switch (status) {
-      case "CONFIRMED":
-        return "bg-blue-100 text-blue-800"
-      case "PREPARING":
-        return "bg-yellow-100 text-yellow-800"
-      case "PICKUP":
-        return "bg-purple-100 text-purple-800"
-      case "DELIVERED":
-        return "bg-green-100 text-green-800"
-      case "CANCELLED":
-        return "bg-red-100 text-red-800"
-      default:
-        return "bg-gray-100 text-gray-800"
     }
   }
 
@@ -87,7 +64,6 @@ const ProfilePage: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         className="max-w-md mx-auto p-4 space-y-4 md:space-y-6 pt-20 md:pt-24 min-h-screen flex flex-col"
       >
-        {/* Profile Header */}
         <Card>
           <CardHeader className="text-center p-4 md:p-6">
             <div className="w-16 h-16 md:w-20 md:h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
@@ -100,7 +76,6 @@ const ProfilePage: React.FC = () => {
           </CardHeader>
         </Card>
 
-        {/* Addresses */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between p-4 md:p-6">
             <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
@@ -151,7 +126,6 @@ const ProfilePage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Recent Orders */}
         <Card>
           <CardHeader className="p-4 md:p-6">
             <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
@@ -171,11 +145,12 @@ const ProfilePage: React.FC = () => {
                 {recentOrders.map((order) => (
                   <div key={order.id} className="p-3 border rounded-lg text-sm">
                     <div className="flex items-center justify-between mb-2">
-                      <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
-                      <span className="text-sm font-medium">₹{order.finalAmount}</span>
+                      <Badge className={getOrderStatusColor(order.status)}>{formatOrderStatus(order.status)}</Badge>
+                      <span className="text-sm font-medium">â‚¹{order.finalAmount}</span>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {order.items.length} items • {new Date(order.createdAt.toDate()).toLocaleDateString()}
+                      {order.items.reduce((sum, item) => sum + item.quantity, 0)} items â€¢{" "}
+                      {new Date(order.createdAt.toDate()).toLocaleDateString()}
                     </p>
                   </div>
                 ))}
@@ -186,7 +161,6 @@ const ProfilePage: React.FC = () => {
 
         <Separator className="my-4 md:my-6" />
 
-        {/* Logout Button */}
         <Button variant="destructive" onClick={handleLogout} className="w-full text-base md:text-lg py-2 md:py-3">
           <LogOut className="w-4 h-4 mr-2" />
           Logout

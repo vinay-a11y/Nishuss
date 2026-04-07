@@ -91,7 +91,7 @@ const MenuPage: React.FC = () => {
           <div className="relative max-w-md mx-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
-              placeholder="Search for biryani..."
+              placeholder="Search for dishes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 h-12 text-base"
@@ -150,7 +150,7 @@ const MenuPage: React.FC = () => {
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-              <p className="text-muted-foreground">Loading delicious biryanis...</p>
+              <p className="text-muted-foreground">Loading dishes from Vaibhav Resto...</p>
             </div>
           </div>
         ) : filteredProducts.length === 0 ? (
@@ -159,7 +159,7 @@ const MenuPage: React.FC = () => {
               <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
                 <Search className="w-12 h-12 text-muted-foreground" />
               </div>
-              <h3 className="text-xl font-heading font-semibold mb-2">No biryanis found</h3>
+              <h3 className="text-xl font-heading font-semibold mb-2">No dishes found</h3>
               <p className="text-muted-foreground mb-6">
                 Try adjusting your search or filter criteria to find what you're looking for.
               </p>
@@ -186,7 +186,7 @@ const MenuPage: React.FC = () => {
         {!loading && filteredProducts.length > 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center mt-12">
             <p className="text-muted-foreground">
-              Showing {filteredProducts.length} of {products.length} biryanis
+              Showing {filteredProducts.length} of {products.length} menu items
             </p>
           </motion.div>
         )}

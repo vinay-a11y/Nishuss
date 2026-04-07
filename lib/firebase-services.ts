@@ -5,6 +5,7 @@ import {
   getDoc,
   addDoc,
   updateDoc,
+  deleteDoc,
   query,
   where,
   orderBy,
@@ -30,6 +31,21 @@ export interface Product {
   reviews: number
   available: boolean
   createdAt: Timestamp
+  updatedAt?: Timestamp
+}
+
+export interface ProductFormData {
+  name: string
+  description: string
+  price: number
+  image: string
+  category: string
+  cookingTime: string
+  isVeg: boolean
+  spiceLevel: Product["spiceLevel"]
+  rating: number
+  reviews: number
+  available: boolean
 }
 
 // User interface
@@ -91,6 +107,17 @@ export interface OrderStatusUpdate {
   message: string
 }
 
+export interface ContactSubmission {
+  id: string
+  name: string
+  email: string
+  phone: string
+  message: string
+  status: "NEW" | "REVIEWED" | "RESOLVED"
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
 // Product Services
 export const productService = {
   // Get all products
@@ -136,6 +163,78 @@ export const productService = {
     } catch (error) {
       console.error("Error fetching product:", error)
       return null
+    }
+  },
+
+  async getAllProductsForAdmin(): Promise<Product[]> {
+    try {
+      const productsRef = collection(db, "products")
+      const q = query(productsRef, orderBy("createdAt", "desc"))
+      const snapshot = await getDocs(q)
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Product)
+    } catch (error) {
+      console.error("Error fetching admin products:", error)
+      return []
+    }
+  },
+
+  async createProduct(productData: ProductFormData): Promise<string> {
+    try {
+      const productsRef = collection(db, "products")
+      const docRef = await addDoc(productsRef, {
+        ...productData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+      return docRef.id
+    } catch (error) {
+      console.error("Error creating product:", error)
+      throw error
+    }
+  },
+
+  async updateProduct(productId: string, productData: Partial<ProductFormData>): Promise<void> {
+    try {
+      const productRef = doc(db, "products", productId)
+      await updateDoc(productRef, {
+        ...productData,
+        updatedAt: serverTimestamp(),
+      })
+    } catch (error) {
+      console.error("Error updating product:", error)
+      throw error
+    }
+  },
+
+  async deleteProduct(productId: string): Promise<void> {
+    try {
+      const productRef = doc(db, "products", productId)
+      await deleteDoc(productRef)
+    } catch (error) {
+      console.error("Error deleting product:", error)
+      throw error
+    }
+  },
+
+  subscribeToAllProducts(callback: (products: Product[]) => void): Unsubscribe {
+    try {
+      const productsRef = collection(db, "products")
+      const q = query(productsRef, orderBy("createdAt", "desc"))
+
+      return onSnapshot(
+        q,
+        (snapshot) => {
+          const products = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Product)
+          callback(products)
+        },
+        (error) => {
+          console.error("Error in products subscription:", error)
+          callback([])
+        },
+      )
+    } catch (error) {
+      console.error("Error setting up products subscription:", error)
+      return () => {}
     }
   },
 }
@@ -332,6 +431,19 @@ export const orderService = {
     }
   },
 
+  // Get all orders for admin management
+  async getAllOrders(): Promise<Order[]> {
+    try {
+      const ordersRef = collection(db, "orders")
+      const q = query(ordersRef, orderBy("createdAt", "desc"))
+      const snapshot = await getDocs(q)
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Order)
+    } catch (error) {
+      console.error("Error fetching all orders:", error)
+      return []
+    }
+  },
+
   // Get single order
   async getOrder(orderId: string): Promise<Order | null> {
     try {
@@ -451,6 +563,72 @@ export const orderService = {
       )
     } catch (error) {
       console.error("Error setting up order subscription:", error)
+      return () => {}
+    }
+  },
+}
+
+export const contactService = {
+  async createSubmission(data: Omit<ContactSubmission, "id" | "status" | "createdAt" | "updatedAt">): Promise<string> {
+    try {
+      const contactsRef = collection(db, "contactSubmissions")
+      const docRef = await addDoc(contactsRef, {
+        ...data,
+        status: "NEW",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+
+      return docRef.id
+    } catch (error) {
+      console.error("Error creating contact submission:", error)
+      throw error
+    }
+  },
+
+  async getAllSubmissions(): Promise<ContactSubmission[]> {
+    try {
+      const contactsRef = collection(db, "contactSubmissions")
+      const q = query(contactsRef, orderBy("createdAt", "desc"))
+      const snapshot = await getDocs(q)
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as ContactSubmission)
+    } catch (error) {
+      console.error("Error fetching contact submissions:", error)
+      return []
+    }
+  },
+
+  async updateSubmissionStatus(submissionId: string, status: ContactSubmission["status"]): Promise<void> {
+    try {
+      const submissionRef = doc(db, "contactSubmissions", submissionId)
+      await updateDoc(submissionRef, {
+        status,
+        updatedAt: serverTimestamp(),
+      })
+    } catch (error) {
+      console.error("Error updating contact submission status:", error)
+      throw error
+    }
+  },
+
+  subscribeToSubmissions(callback: (submissions: ContactSubmission[]) => void): Unsubscribe {
+    try {
+      const contactsRef = collection(db, "contactSubmissions")
+      const q = query(contactsRef, orderBy("createdAt", "desc"))
+
+      return onSnapshot(
+        q,
+        (snapshot) => {
+          const submissions = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as ContactSubmission)
+          callback(submissions)
+        },
+        (error) => {
+          console.error("Error in contact submissions subscription:", error)
+          callback([])
+        },
+      )
+    } catch (error) {
+      console.error("Error setting up contact submissions subscription:", error)
       return () => {}
     }
   },

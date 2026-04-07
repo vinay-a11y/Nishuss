@@ -13,6 +13,7 @@ import { auth } from "@/lib/firebase"
 import { orderService, type Order } from "@/lib/firebase-services"
 import toast from "react-hot-toast"
 import AddressModal from "@/components/AddressModal"
+import { formatOrderStatus, getOrderStatusColor } from "@/lib/order-status"
 
 interface UserProfileProps {
   onClose: () => void
@@ -25,30 +26,21 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
   const [showAddressModal, setShowAddressModal] = useState(false)
 
   React.useEffect(() => {
-    if (user) {
-      loadRecentOrders()
-    }
-  }, [user])
-
-  const loadRecentOrders = async () => {
     if (!user) return
 
     setLoading(true)
-    try {
-      const orders = await orderService.getUserOrders(user.uid)
+    const unsubscribe = orderService.subscribeToUserOrders(user.uid, (orders) => {
       setRecentOrders(orders.slice(0, 3))
-    } catch (error) {
-      console.error("Error loading orders:", error)
-      toast.error("Failed to load orders")
-    } finally {
       setLoading(false)
-    }
-  }
+    })
+
+    return () => unsubscribe()
+  }, [user])
 
   const handleLogout = async () => {
     try {
       await signOut(auth)
-      toast.success("Logged out successfully 👋")
+      toast.success("Logged out successfully")
       onClose()
     } catch (error) {
       console.error(error)
@@ -56,26 +48,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
     }
   }
 
-  const getStatusColor = (status: Order["status"]) => {
-    switch (status) {
-      case "CONFIRMED":
-        return "bg-blue-100 text-blue-800"
-      case "PREPARING":
-        return "bg-yellow-100 text-yellow-800"
-      case "PICKUP":
-        return "bg-orange-100 text-orange-800"
-      case "DELIVERY":
-        return "bg-purple-100 text-purple-800"
-      case "DELIVERED":
-        return "bg-green-100 text-green-800"
-      case "CANCELLED":
-        return "bg-red-100 text-red-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
-
-  // ✅ Prevent crash if data not ready
   if (!user) return null
 
   return (
@@ -85,24 +57,19 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
         animate={{ opacity: 1, y: 0 }}
         className="max-w-2xl mx-auto p-4 space-y-6"
       >
-        {/* Profile Header */}
         <Card>
           <CardHeader className="text-center">
             <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <User className="w-10 h-10 text-primary" />
             </div>
 
-            <CardTitle className="text-2xl font-heading">
-              {userProfile?.name || "User"}
-            </CardTitle>
+            <CardTitle className="text-2xl font-heading">{userProfile?.name || "User"}</CardTitle>
 
-            {/* ✅ EMAIL (since no phone auth now) */}
             <div className="flex items-center justify-center space-x-2 text-muted-foreground">
               <Mail className="w-4 h-4" />
               <span>{userProfile?.email || user.email || "No email"}</span>
             </div>
 
-            {/* OPTIONAL PHONE */}
             {userProfile?.phoneNumber && (
               <div className="flex items-center justify-center space-x-2 text-muted-foreground">
                 <Phone className="w-4 h-4" />
@@ -116,7 +83,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
           </CardHeader>
         </Card>
 
-        {/* Addresses */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center space-x-2">
@@ -137,9 +103,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
 
           <CardContent className="space-y-3">
             {userProfile?.addresses?.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">
-                No addresses added yet
-              </p>
+              <p className="text-muted-foreground text-center py-4">No addresses added yet</p>
             ) : (
               userProfile?.addresses?.map((address) => (
                 <div key={address.id} className="p-3 border rounded-lg flex justify-between">
@@ -165,7 +129,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
           </CardContent>
         </Card>
 
-        {/* Orders */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -178,24 +141,18 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
             {loading ? (
               <div className="text-center py-4">Loading...</div>
             ) : recentOrders.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">
-                No orders yet
-              </p>
+              <p className="text-muted-foreground text-center py-4">No orders yet</p>
             ) : (
               recentOrders.map((order) => (
                 <div key={order.id} className="p-3 border rounded-lg mb-2">
                   <div className="flex justify-between">
-                    <Badge className={getStatusColor(order.status)}>
-                      {order.status}
-                    </Badge>
-                    <span>₹{order.finalAmount}</span>
+                    <Badge className={getOrderStatusColor(order.status)}>{formatOrderStatus(order.status)}</Badge>
+                    <span>â‚¹{order.finalAmount}</span>
                   </div>
 
                   <p className="text-sm text-muted-foreground">
-                    {order.items.length} items •{" "}
-                    {order.createdAt?.toDate
-                      ? new Date(order.createdAt.toDate()).toLocaleDateString()
-                      : "Date not available"}
+                    {order.items.reduce((sum, item) => sum + item.quantity, 0)} items â€¢{" "}
+                    {order.createdAt?.toDate ? new Date(order.createdAt.toDate()).toLocaleDateString() : "Date not available"}
                   </p>
                 </div>
               ))
@@ -205,7 +162,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
 
         <Separator />
 
-        {/* Logout */}
         <Button variant="destructive" onClick={handleLogout} className="w-full">
           <LogOut className="w-4 h-4 mr-2" />
           Logout

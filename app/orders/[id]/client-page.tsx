@@ -1,30 +1,19 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
-import {
-  ArrowLeft,
-  Package,
-  MapPin,
-  Clock,
-  CheckCircle,
-  Truck,
-  Phone,
-  MessageCircle,
-  Receipt,
-  Star,
-  RotateCcw,
-} from "lucide-react"
+import { useEffect, useState } from "react"
+import { ArrowLeft, Package, MapPin, Truck, Phone, MessageCircle, Receipt, Star, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Progress } from "@/components/ui/progress"
 import { orderService, type Order } from "@/lib/firebase-services"
 import { useAuth } from "@/contexts/AuthContext"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { motion } from "framer-motion"
+import OrderStatusTracker from "@/components/OrderStatusTracker"
+import { formatOrderStatus, getOrderStatusColor, getOrderStatusMessage, isActiveOrderStatus } from "@/lib/order-status"
 
 interface OrderDetailsClientPageProps {
   params: {
@@ -54,83 +43,33 @@ const OrderDetailsClientPage: React.FC<OrderDetailsClientPageProps> = ({ params 
 
     const unsubscribe = orderService.subscribeToOrder(orderId, (orderData) => {
       if (orderData) {
-        // Verify user owns this order
-        if (orderData.userId !== user?.uid) {
+        if (orderData.userId !== user.uid) {
           setError("Order not found")
-          return
+        } else {
+          setOrder(orderData)
+          setError(null)
         }
-        setOrder(orderData)
-        setError(null)
       } else {
         setError("Order not found")
       }
+
       setLoading(false)
     })
 
     return () => unsubscribe()
   }, [user, orderId, router])
 
-  const getStatusColor = (status: Order["status"]) => {
-    switch (status) {
-      case "CONFIRMED":
-        return "bg-primary/10 text-primary border-primary/20"
-      case "PREPARING":
-        return "bg-orange-100 text-orange-700 border-orange-200"
-      case "PICKUP":
-        return "bg-purple-100 text-purple-700 border-purple-200"
-      case "DELIVERY":
-        return "bg-blue-100 text-blue-700 border-blue-200"
-      case "DELIVERED":
-        return "bg-green-100 text-green-700 border-green-200"
-      case "CANCELLED":
-        return "bg-red-100 text-red-700 border-red-200"
-      default:
-        return "bg-muted text-muted-foreground border-border"
-    }
-  }
+  const getEstimatedDeliveryTime = (currentOrder: Order) => {
+    if (currentOrder.status === "DELIVERED" || currentOrder.status === "CANCELLED") return null
 
-  const getOrderProgress = (status: Order["status"]) => {
-    const steps = [
-      { key: "CONFIRMED", label: "Order Confirmed", icon: CheckCircle, time: "Just now" },
-      { key: "PREPARING", label: "Preparing", icon: Clock, time: "5-10 mins" },
-      { key: "PICKUP", label: "Ready for Pickup", icon: Package, time: "15-20 mins" },
-      { key: "DELIVERY", label: "Out for Delivery", icon: Truck, time: "20-30 mins" },
-      { key: "DELIVERED", label: "Delivered", icon: CheckCircle, time: "Completed" },
-    ]
-
-    const statusOrder = ["CONFIRMED", "PREPARING", "PICKUP", "DELIVERY", "DELIVERED"]
-    const currentIndex = statusOrder.indexOf(status)
-
-    return steps.map((step, index) => ({
-      ...step,
-      completed: index <= currentIndex,
-      active: index === currentIndex,
-    }))
-  }
-
-  const getProgressPercentage = (status: Order["status"]) => {
-    const statusOrder = ["CONFIRMED", "PREPARING", "PICKUP", "DELIVERY", "DELIVERED"]
-    const currentIndex = statusOrder.indexOf(status)
-    return ((currentIndex + 1) / statusOrder.length) * 100
-  }
-
-  const getEstimatedDeliveryTime = (order: Order) => {
-    if (order.status === "DELIVERED") return null
-    if (order.status === "CANCELLED") return null
-
-    const orderTime = order.createdAt.toDate()
-    const estimatedTime = new Date(orderTime.getTime() + order.estimatedDeliveryTime * 60 * 1000)
+    const orderTime = currentOrder.createdAt.toDate()
+    const estimatedTime = new Date(orderTime.getTime() + currentOrder.estimatedDeliveryTime * 60 * 1000)
 
     return estimatedTime > new Date() ? estimatedTime : null
   }
 
   const handleReorder = async () => {
-    try {
-      // Add items to cart and redirect to checkout
-      router.push("/menu")
-    } catch (error) {
-      console.error("Error reordering:", error)
-    }
+    router.push("/menu")
   }
 
   if (loading) {
@@ -157,9 +96,7 @@ const OrderDetailsClientPage: React.FC<OrderDetailsClientPageProps> = ({ params 
     )
   }
 
-  const orderProgress = getOrderProgress(order.status)
-  const isActive = ["CONFIRMED", "PREPARING", "PICKUP", "DELIVERY"].includes(order.status)
-  const progressPercentage = getProgressPercentage(order.status)
+  const isActive = isActiveOrderStatus(order.status)
   const estimatedDelivery = getEstimatedDeliveryTime(order)
 
   return (
@@ -179,75 +116,29 @@ const OrderDetailsClientPage: React.FC<OrderDetailsClientPageProps> = ({ params 
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Order Progress */}
           <div className="lg:col-span-2 space-y-6">
-            {isActive && order.status !== "CANCELLED" && (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                <Card className="card-hover border-primary/20">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Truck className="w-5 h-5 mr-2 text-primary" />
-                        Order Progress
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <Card className="card-hover border-primary/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Truck className="w-5 h-5 mr-2 text-primary" />
+                      Order Progress
+                    </div>
+                    {estimatedDelivery && (
+                      <div className="text-sm text-muted-foreground">
+                        Est. delivery: {estimatedDelivery.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </div>
-                      {estimatedDelivery && (
-                        <div className="text-sm text-muted-foreground">
-                          Est. delivery:{" "}
-                          {estimatedDelivery.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </div>
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mb-6">
-                      <Progress value={progressPercentage} className="h-2" />
-                      <p className="text-sm text-muted-foreground mt-2">{Math.round(progressPercentage)}% Complete</p>
-                    </div>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <OrderStatusTracker currentStatus={order.status} />
+                  <p className="mt-4 text-sm text-muted-foreground">{getOrderStatusMessage(order)}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-                    <div className="space-y-6">
-                      {orderProgress.map((step, index) => {
-                        const IconComponent = step.icon
-                        return (
-                          <motion.div
-                            key={step.key}
-                            className="flex items-center space-x-4"
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                          >
-                            <div
-                              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
-                                step.completed
-                                  ? "bg-primary text-black animate-glow"
-                                  : step.active
-                                    ? "bg-primary/20 text-primary border-2 border-primary animate-pulse"
-                                    : "bg-muted text-muted-foreground"
-                              }`}
-                            >
-                              <IconComponent className="w-5 h-5" />
-                            </div>
-                            <div className="flex-1">
-                              <p
-                                className={`font-medium ${
-                                  step.completed || step.active ? "text-foreground" : "text-muted-foreground"
-                                }`}
-                              >
-                                {step.label}
-                              </p>
-                              {step.active && <p className="text-sm text-primary font-medium neon-text">In Progress</p>}
-                              {step.completed && !step.active && <p className="text-sm text-green-600">Completed</p>}
-                              <p className="text-xs text-muted-foreground">{step.time}</p>
-                            </div>
-                          </motion.div>
-                        )
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-
-            {/* Order Items */}
             <Card className="card-hover border-primary/20">
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -277,16 +168,15 @@ const OrderDetailsClientPage: React.FC<OrderDetailsClientPageProps> = ({ params 
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium truncate">{item.name}</h3>
                         <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
-                        <p className="text-sm text-muted-foreground">₹{item.price} each</p>
+                        <p className="text-sm text-muted-foreground">â‚¹{item.price} each</p>
                       </div>
-                      <p className="font-semibold text-primary shrink-0 neon-text">₹{item.price * item.quantity}</p>
+                      <p className="font-semibold text-primary shrink-0 neon-text">â‚¹{item.price * item.quantity}</p>
                     </motion.div>
                   ))}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Delivery Address */}
             <Card className="card-hover border-primary/20">
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -312,13 +202,12 @@ const OrderDetailsClientPage: React.FC<OrderDetailsClientPageProps> = ({ params 
             </Card>
           </div>
 
-          {/* Order Summary Sidebar */}
           <div className="space-y-6">
             <Card className="card-hover border-primary/20">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Order Status</span>
-                  <Badge className={getStatusColor(order.status)}>{order.status.replace("_", " ")}</Badge>
+                  <Badge className={getOrderStatusColor(order.status)}>{formatOrderStatus(order.status)}</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -354,16 +243,16 @@ const OrderDetailsClientPage: React.FC<OrderDetailsClientPageProps> = ({ params 
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span>Items Total</span>
-                  <span>₹{order.totalAmount}</span>
+                  <span>â‚¹{order.totalAmount}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Delivery Fee</span>
-                  <span>{order.deliveryFee === 0 ? "FREE" : `₹${order.deliveryFee}`}</span>
+                  <span>{order.deliveryFee === 0 ? "FREE" : `â‚¹${order.deliveryFee}`}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Total Paid</span>
-                  <span className="text-primary neon-text">₹{order.finalAmount}</span>
+                  <span className="text-primary neon-text">â‚¹{order.finalAmount}</span>
                 </div>
                 <div className="text-center pt-2">
                   <Badge className="bg-primary/10 text-primary border-primary/20">Payment {order.paymentStatus}</Badge>

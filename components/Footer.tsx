@@ -19,11 +19,11 @@ const Footer: React.FC = () => {
           >
             <div className="flex items-center space-x-2">
               <span className="text-2xl font-bold">
-                <span className="text-orange-500">Biryani</span> Adda
+                <span className="text-orange-500">Vaibhav</span> Resto
               </span>
             </div>
             <p className="text-gray-400">
-              Authentic flavors of Bhiwandi's finest biryani, crafted with love and traditional spices.
+              Fresh restaurant favorites, signature biryanis, and comforting meals served with Vaibhav Resto hospitality.
             </p>
             <div className="flex space-x-4">
               <motion.a
@@ -103,7 +103,7 @@ const Footer: React.FC = () => {
               <div className="flex items-start space-x-3">
                 <Mail className="w-5 h-5 text-orange-500 mt-0.5" />
                 <div>
-                  <p className="text-white">info@biryaniadda.com</p>
+                  <p className="text-white">info@vaibhavresto.com</p>
                   <p className="text-gray-400 text-sm">Customer Support</p>
                 </div>
               </div>
@@ -153,10 +153,10 @@ const Footer: React.FC = () => {
         >
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">
-              © 2024 Biryani Adda. All rights reserved.
+              © 2024 Vaibhav Resto. All rights reserved.
             </p>
             <p className="text-gray-400 text-sm mt-2 md:mt-0">
-              Made with ❤️ for biryani lovers
+              Made with care for food lovers
             </p>
           </div>
         </motion.div>
